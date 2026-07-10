@@ -89,4 +89,4 @@ node scripts/calibrate.mjs --elo 800 --games 20 --anchor 1320
 
 ## License
 
-AGPL-3.0-only (same as Sei). The bundled Stockfish WASM build is GPL-3.0 (see `engines/Copying.txt`); Maia weights and the Maia-3 export come from the [Maia Chess](https://www.maiachess.com) project (CSSLab, University of Toronto). CCE-1 is not affiliated with either project.
+AGPL-3.0-only (same as Sei). The bundled Stockfish WASM build (`engines/`, unmodified `stockfish-18-lite-single` from [stockfish.js](https://github.com/nmrugg/stockfish.js) v18.0.8) is GPL-3.0; see `engines/Copying.txt`, with corresponding source at that repository and the [Stockfish](https://github.com/official-stockfish/Stockfish) project. The Maia-3 ONNX export mirrored in this repo's releases comes from the [Maia Chess](https://www.maiachess.com) project (CSSLab, University of Toronto) and carries no explicit license of its own; if that matters for your use, export the model yourself from the MIT-licensed [maia2](https://github.com/CSSLab/maia2) checkpoints. CCE-1 is not affiliated with either project.
