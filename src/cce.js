@@ -33,7 +33,7 @@ export class CharacterChessEngine {
 
   /**
    * @param {object} opts
-   * @param {string} opts.maiaModelPath path to maia3_simplified.onnx
+   * @param {string} opts.maiaModelPath path to maia3-5m.onnx
    * @param {() => number} [opts.rng] uniform [0,1) source (seedable for tests)
    */
   static async create({ maiaModelPath, rng }) {

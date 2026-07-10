@@ -33,7 +33,7 @@ selection:          LLM with persona text picks purely by character.
 ### Components
 
 - **Chess profile** (`src/profile.js`) — the persona config: Elo (400-2000) plus optional overrides for temperature, blunder rate, blinder rate, lookahead depth, and band width. Everything derives from Elo by default.
-- **Elo-adjusted Maia** (`src/maia.js`) — Maia inference conditioned on persona Elo (`elo_oppo = elo_self`), returning a probability distribution over all legal moves. This implementation uses the unified Maia-3 ONNX export (trained over roughly Elo 600-2600), run with onnxruntime-node.
+- **Elo-adjusted Maia** (`src/maia.js`) — Maia inference conditioned on persona Elo (`elo_oppo = elo_self`), returning a probability distribution over all legal moves. This implementation runs the official Maia-3 5M checkpoint ([CSSLab/maia3](https://github.com/CSSLab/maia3), Chessformer architecture), exported to ONNX by `scripts/export-maia3.py` and run with onnxruntime-node. Elo conditioning is continuous; we use the 600-2600 range.
 - **Move sampler** (`src/sampler.js`) — Gumbel-top-k over the tempered distribution: `s(m) = log p(m)/T + g_m`, keep the top 4; equivalent to sequential sampling without replacement from `q(m) ∝ p(m)^(1/T)`. Temperature is 1 inside Maia's calibrated range and rises linearly below it (a 400 persona gets T = 2). Moves below 1% raw probability are dropped before tempering so the flattening spreads mass over bad-but-human moves, not the full legal tail.
 - **Blunder** (`src/cce.js`) — with Elo-scaled probability `P = b_max · e^{-(Elo-400)/λ}`, swaps one candidate for a move from the bottom tail of the distribution. Models impulsive lapses.
 - **Blinder** (`src/cce.js`) — when Stockfish detects a short forced mate or a wide-gap tactic, removes it from the candidate set with probability `P = 1 - σ((Elo-μ)/s)`. Models not seeing what is on the board and counters Maia's tactical-sharpness quirk. Both curves start near certainty at 400 and near zero at 2000.
@@ -48,7 +48,7 @@ selection:          LLM with persona text picks purely by character.
 import { CharacterChessEngine } from 'cce-1';
 
 const engine = await CharacterChessEngine.create({
-  maiaModelPath: '/path/to/maia3_simplified.onnx',
+  maiaModelPath: '/path/to/maia3-5m.onnx',
 });
 
 const out = await engine.candidateSet(fen, { elo: 900 });
@@ -63,7 +63,7 @@ const out = await engine.candidateSet(fen, { elo: 900 });
 await engine.dispose();
 ```
 
-The Maia-3 model file is not bundled (46 MB); download it from this repo's releases (or export it yourself from [CSSLab/maia2](https://github.com/CSSLab/maia2)) and pass its path. The consuming app should present the four candidates plus macro context to its LLM and let the character pick.
+The Maia-3 model file is not bundled (21 MB); download it from this repo's releases, or reproduce it with `scripts/export-maia3.py` from the official [Maia3-5M](https://huggingface.co/UofTCSSLab/Maia3-5M) checkpoint, and pass its path. The consuming app should present the four candidates plus macro context to its LLM and let the character pick.
 
 ## Calibration
 
@@ -83,10 +83,10 @@ node scripts/calibrate.mjs --elo 800 --games 20 --anchor 1320
 
 ## Implementation notes (deviations from the paper)
 
-- The paper targets Maia-2 (calibrated 1100-1900, categorical Elo inputs). This implementation uses the unified Maia-3 ONNX export with continuous Elo inputs trained over roughly 600-2600, so temperature extrapolation only has to cover 400-600 and the formulas' floor constant is 600, not 1100.
-- The move vocabulary and board encoding (board mirrored to white's perspective; flat 64x12 piece tokens; 4352-move index space) were reimplemented from the observed model contract and verified against the reference deployment.
+- The paper targets Maia-2 (calibrated 1100-1900, categorical Elo inputs). This implementation uses Maia-3 ([CSSLab/maia3](https://github.com/CSSLab/maia3), the Chessformer paper, ICLR 2026) with continuous Elo inputs and a 600-2600 deployment range, so temperature extrapolation only has to cover 400-600 and the formulas' floor constant is 600, not 1100.
+- The model file is our own ONNX export of the official Maia3-5M checkpoint (`scripts/export-maia3.py`). The wrapper bakes the reference engine's no-history behavior (current position repeated to fill the 8-position window) into the graph, so inference takes a single position. Board encoding (mirror to white's perspective; flat 64x12 piece tokens) and the 4352-move vocabulary match the official repo's `tokenize_board` / `get_all_possible_moves`.
 - Candidates carry SAN alongside the sentences; the paper's "no raw notation reaches the LLM" is relaxed one notch so the downstream `play(move)` tool has an unambiguous argument.
 
 ## License
 
-AGPL-3.0-only (same as Sei). The bundled Stockfish WASM build (`engines/`, unmodified `stockfish-18-lite-single` from [stockfish.js](https://github.com/nmrugg/stockfish.js) v18.0.8) is GPL-3.0; see `engines/Copying.txt`, with corresponding source at that repository and the [Stockfish](https://github.com/official-stockfish/Stockfish) project. The Maia-3 ONNX export mirrored in this repo's releases comes from the [Maia Chess](https://www.maiachess.com) project (CSSLab, University of Toronto) and carries no explicit license of its own; if that matters for your use, export the model yourself from the MIT-licensed [maia2](https://github.com/CSSLab/maia2) checkpoints. CCE-1 is not affiliated with either project.
+AGPL-3.0-only (same as Sei). The bundled Stockfish WASM build (`engines/`, unmodified `stockfish-18-lite-single` from [stockfish.js](https://github.com/nmrugg/stockfish.js) v18.0.8) is GPL-3.0; see `engines/Copying.txt`, with corresponding source at that repository and the [Stockfish](https://github.com/official-stockfish/Stockfish) project. The Maia-3 model in this repo's releases is our ONNX export (`scripts/export-maia3.py`) of the official [Maia3-5M](https://huggingface.co/UofTCSSLab/Maia3-5M) checkpoint released by the [Maia Chess](https://www.maiachess.com) project (CSSLab, University of Toronto) under AGPL-3.0 at [CSSLab/maia3](https://github.com/CSSLab/maia3); it stays AGPL-3.0. CCE-1 is not affiliated with the Maia or Stockfish projects.

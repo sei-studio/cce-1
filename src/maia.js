@@ -1,10 +1,14 @@
 /**
  * Maia-3 ONNX runner: Elo-conditioned human move distributions.
  *
- * Model contract (verified against the maiachess.com export):
+ * The model is exported from the official Maia-3 release (CSSLab/maia3,
+ * AGPL-3.0; checkpoints at huggingface.co/UofTCSSLab) by
+ * scripts/export-maia3.py, which bakes the reference engine's
+ * repeat-current-position history padding into the graph. Contract:
  *   inputs  tokens f32 [batch, 64, 12], elo_self f32 [batch], elo_oppo f32 [batch]
  *   outputs logits_move [batch, 4352], logits_value [batch, 3] (L/D/W, side to move)
- * Elo is a raw continuous float; the model is trained over roughly 600-2600.
+ * Elo is a raw continuous float (the model interpolates between two learned
+ * embeddings); we clamp to the 600-2600 range the deployment is rated for.
  */
 
 import { Chess } from 'chess.js';

@@ -1,8 +1,8 @@
 /**
  * Maia-3 move vocabulary: 4352 indices.
  *
- * Layout (verified byte-identical to the ordering used by the maia3 ONNX
- * export served at maiachess.com):
+ * Layout (matches get_all_possible_moves() in the official CSSLab/maia3
+ * repo, and verified byte-identical to the reference deployment's ordering):
  *   [0, 4096)    from-square * 64 + to-square, for every from/to pair
  *                (identity pairs included), square index = rank * 8 + file
  *                (a1 = 0, h8 = 63).

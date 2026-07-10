@@ -27,7 +27,7 @@ const { values: args } = parseArgs({
     anchor: { type: 'string', default: '1320' }, // stockfish UCI_Elo floor
     model: {
       type: 'string',
-      default: path.join(homedir(), '.sei-dev', 'cce', 'maia3_simplified.onnx'),
+      default: path.join(homedir(), '.sei-dev', 'cce', 'maia3-5m.onnx'),
     },
     seed: { type: 'string', default: '1' },
   },

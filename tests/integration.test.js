@@ -1,7 +1,7 @@
 /**
  * End-to-end candidate generation against the real Maia-3 model and the
  * bundled Stockfish. Skipped when the model file is absent (CI without the
- * 46 MB download); locally the dev copy lives at ~/.sei-dev/cce/.
+ * 21 MB download); locally the dev copy lives at ~/.sei-dev/cce/.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import { Chess } from 'chess.js';
 
 const MODEL =
   process.env.CCE_MAIA_MODEL ??
-  path.join(homedir(), '.sei-dev', 'cce', 'maia3_simplified.onnx');
+  path.join(homedir(), '.sei-dev', 'cce', 'maia3-5m.onnx');
 
 const hasModel = existsSync(MODEL);
 
