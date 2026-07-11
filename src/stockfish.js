@@ -30,10 +30,28 @@ export class StockfishEngine {
     const engine = {
       locateFile: (p) => (p.endsWith('.wasm') ? ENGINE_WASM : path.join(ENGINE_DIR, p)),
     };
-    await INIT_ENGINE()(engine);
-    // The wasm runtime signals readiness via _isReady on some builds.
-    while (engine._isReady && !engine._isReady()) {
-      await new Promise((r) => setTimeout(r, 10));
+    // The emscripten glue, when it detects Node, installs a fake global
+    // XMLHttpRequest and then assigns `fetch = null` so ITS wasm loader takes
+    // the XHR/fs path. Both assignments leak PROCESS-WIDE and the null fetch
+    // silently breaks every later fetch consumer in the host app (API SDKs,
+    // auth clients report generic connection errors). Snapshot the globals and
+    // put them back once the engine is up; the wasm is loaded exactly once,
+    // during init, so the glue never needs its shims again.
+    const realFetch = globalThis.fetch;
+    const hadXhr = 'XMLHttpRequest' in globalThis;
+    try {
+      await INIT_ENGINE()(engine);
+      // The wasm runtime signals readiness via _isReady on some builds.
+      while (engine._isReady && !engine._isReady()) {
+        await new Promise((r) => setTimeout(r, 10));
+      }
+    } finally {
+      if (typeof realFetch === 'function' && globalThis.fetch == null) {
+        globalThis.fetch = realFetch;
+      }
+      if (!hadXhr && 'XMLHttpRequest' in globalThis) {
+        delete globalThis.XMLHttpRequest;
+      }
     }
     const sf = new StockfishEngine(engine);
     await sf._command('uci', (line) => line === 'uciok');
