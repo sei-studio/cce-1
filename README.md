@@ -2,7 +2,7 @@
 
 Skill-conditioned move generation with LLM personality selection, Elo 400 to 2000.
 
-This is the reference implementation of the CCE-1 design ([cce-1.pdf](./cce-1.pdf), included in this repo). It powers the chess minigame in [Sei](https://github.com/sei-studio/sei).
+This is the reference implementation of the CCE-1 design ([CCE1.pdf](./CCE1.pdf), included in this repo). It powers the chess minigame in [Sei](https://github.com/sei-studio/sei).
 
 ## Problem
 
